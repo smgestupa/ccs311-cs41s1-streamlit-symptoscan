@@ -94,6 +94,10 @@ symptoms_df = pd.read_csv("datasets/symptoms.csv")
 
 """# 🩺 SymptoScan"""
 
+"""SymptoScan, derived from "symptom" and "scan," is designed to analyze user symptoms and suggest potential diseases/illnesses. Users can input various symptoms, allowing the chatbot to identify or provide insights into potential sicknesses."""
+
+"""❗❗&nbsp;&nbsp;If doubts persist, consulting a licensed doctor is recommended, as they possess the expertise needed for accurate diagnoses, unlike the chatbot relying on internet-based knowledge."""
+
 def disable_chat_input():
     st.session_state.disable_chat_input = True
 
@@ -121,7 +125,7 @@ if "last_symptom" not in st.session_state:
 if len(st.session_state.messages) == 0:
     st.session_state.messages.append({
         'role': 'assistant', 
-        'content': "Greetings! I am SymptoScan, your dedicated healthcare companion, here to guide you on your wellness journey. Think of me not merely as a chatbot, but as your very own Baymax-inspired health assistant.\n\n**🤗 Caring Conversations**: I'm here to engage in caring conversations with you. Describe your symptoms, and I'll provide information and support..\n\n**🚑 24/7 Healthcare Companion**: Much like Baymax's round-the-clock availability, I'm here for you 24/7. Anytime you need assistance, I'm just a message away.\n\n**💊 Educational and Reassuring Insights**: I'm not just here for information; I'm here to educate and reassure. Gain insights into your health conditions and receive guidance on self-care.\n\n**🔒 Privacy and Security**: Your health information is as precious as for healthcare capabilities. Rest assured, your data is safe and secure for I don't store any information about you."
+        'content': "Greetings! I am SymptoScan, your dedicated healthcare companion, here to guide you on your wellness journey. Think of me not merely as a chatbot, but as your very own Baymax-inspired health assistant.\n\n**🤗 Caring Conversations**: Describe your symptoms, and I'll provide information and support.\n\n**🚑 Healthcare Companion**: Much like Baymax's round-the-clock availability, I'm here for you 24/7 and I'm just a message away.\n\n**💊 Educational and Reassuring Insights**: I'm not just here for information; I'm here to educate and reassure. Gain insights into your health conditions and receive guidance.\n\n**🔒 Privacy and Security**: Your health information is as precious as for healthcare capabilities. Rest assured, your data is safe and secure for I don't store any information about you."
         })
 
 for message in st.session_state.messages:
