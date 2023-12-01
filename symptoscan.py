@@ -149,7 +149,7 @@ if current_state == "NOT_ASKING" and prompt is not None:
         if similarity_score <= 10:
             write_bot_message(f'We have failed to scan your symptoms, please try again and we recommend listing out what symptoms you are experiencing.\n\n(e.g. I am experiencing symptoms such as runny nose, coughing, sore throat.)')
         else:
-            write_bot_message(f'Based on the symptoms you are experiencing, you may be experiencing {row[0]}. Symptoms of {row[0]} include: {row[2]}. Is the diagnosis correct?\n\n(Type Yes & enter if correct.)')
+            write_bot_message(f'Based on the symptoms you are experiencing, you may be experiencing {row[0]}. Symptoms of {row[0]} include: {row[2]}. Is the diagnosis correct?\n\n(Type **Yes** if correct, **No** if wrong, **Stop** if you want to be re-diagnosed.)')
             st.session_state.current_state = "IS_ASKING"
             st.session_state.possible_diseases = responses
 
