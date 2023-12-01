@@ -43,6 +43,8 @@ def write_bot_message(response):
             message_placeholder.markdown(full_response + "▌")
 
         message_placeholder.markdown(full_response)
+
+        time.sleep(1)
         
         st.session_state.messages.append({'role': 'assistant', 'content': full_response})
 
