@@ -1,4 +1,5 @@
 import time
+import random
 import spacy
 import regex as re
 import streamlit as st
@@ -13,6 +14,22 @@ st.set_page_config(
     page_title="SymptoScan",
     page_icon="🩺"
 )
+
+random_quotes = [
+    "“Time and health are two precious assets that we don't recognize and appreciate until they have been depleted.” - Denis Waitley",
+    "“A fit body, a calm mind, a house full of love. These things cannot be bought - they must be earned.” - Naval Ravikant",
+    "“A good laugh and a long sleep are the best cures in the doctor's book.” - Irish proverb",
+    "“Let food be thy medicine and medicine be thy food.” - Hippocrates",
+    "“A sad soul can be just as lethal as a germ.” - John Steinbeck",
+    "“Good health is not something we can buy. However, it can be an extremely valuable savings account.” - Anne Wilson Schaef",
+    "“Health is not valued until sickness comes.” - Thomas Fuller",
+    "“Your body hears everything your mind says.” - Naomi Judd",
+    "“The way you think, the way you behave, the way you eat, can influence your life by 30 to 50 years.” - Deepak Chopra",
+    "“If you're happy, if you're feeling good, then nothing else matters.” - Robin Wright",
+    "“The first wealth is health.” - Ralph Waldo Emerson"
+]
+
+st.sidebar.success(random.choice(random_quotes))
 
 def write_bot_message(response):
     with st.chat_message('assistant'):
@@ -97,7 +114,10 @@ if "disable_chat_input" not in st.session_state:
     st.session_state.disable_chat_input = False
 
 if len(st.session_state.messages) == 0:
-    st.session_state.messages.append({'role': 'assistant', 'content': 'Good day! You can start or continue this chat by telling us what symptoms you are currently experiencing.\n\nIt would help us if you specify what symptoms: e.g. "I am experiencing symptoms such as runny nose, coughing, sore throat."'})
+    st.session_state.messages.append({
+        'role': 'assistant', 
+        'content': "Greetings! I am SymptoScan, your dedicated healthcare companion, here to guide you on your wellness journey. Think of me not merely as a chatbot, but as your very own Baymax-inspired health assistant.\n\n**🤗 Caring Conversations**: I'm here to engage in caring conversations with you. Describe your symptoms, and I'll provide information and support..\n\n**🚑 24/7 Healthcare Companion**: Much like Baymax's round-the-clock availability, I'm here for you 24/7. Anytime you need assistance, I'm just a message away.\n\n**💊 Educational and Reassuring Insights**: I'm not just here for information; I'm here to educate and reassure. Gain insights into your health conditions and receive guidance on self-care.\n\n**🔒 Privacy and Security**: Your health information is as precious as for healthcare capabilities. Rest assured, your data is safe and secure for I don't store any information about you."
+        })
 
 for message in st.session_state.messages:
     with st.chat_message(message['role']):
