@@ -115,6 +115,9 @@ if "experiencing_symptoms" not in st.session_state:
 if "disable_chat_input" not in st.session_state:
     st.session_state.disable_chat_input = False
 
+if "last_symptom" not in st.session_state:
+    st.session_state.last_symptom = None
+
 if len(st.session_state.messages) == 0:
     st.session_state.messages.append({
         'role': 'assistant', 
@@ -130,6 +133,7 @@ current_state = st.session_state.current_state
 possible_diseases = st.session_state.possible_diseases
 current_symptom = st.session_state.current_symptom
 experiencing_symptoms = st.session_state.experiencing_symptoms
+last_symptom = st.session_state.last_symptom
 
 if prompt := st.chat_input('Ask away!', disabled=st.session_state.disable_chat_input, on_submit=disable_chat_input):
     with st.chat_message('user'):
@@ -231,6 +235,10 @@ elif current_state == "WAITING_SYMPTOM_CALCULATION":
     st.rerun()
 
 elif current_state == "ASKING_SYMPTOM" and len(possible_diseases) > 0:
+    if last_symptom == None:
+        st.session_state.last_symptom = current_symptom
+        st.session_state.disable_chat_input = True
+        st.rerun()
 
     if len(current_symptom[1]) == 0 and len(st.session_state.possible_diseases) - 1 == 0:
         st.session_state.current_state = "SCAN_FAILED"
@@ -250,7 +258,10 @@ elif current_state == "ASKING_SYMPTOM" and len(possible_diseases) > 0:
 
     st.session_state.current_state = "WAITING_SYMPTOM_ANSWER"
 
-elif current_state == "WAITING_SYMPTOM_ANSWER":
+    st.session_state.disable_chat_input = False
+    st.rerun()
+    
+elif current_state == "WAITING_SYMPTOM_ANSWER" and prompt is not None:
     st.session_state.current_state = "ASKING_SYMPTOM"
 
     if prompt in ["yes", "Yes"]:
@@ -258,5 +269,5 @@ elif current_state == "WAITING_SYMPTOM_ANSWER":
     else:
         st.session_state.current_symptom[1].pop(0)
 
-    st.session_state.disable_chat_input = False
+    st.session_state.last_symptom = None
     st.rerun()
