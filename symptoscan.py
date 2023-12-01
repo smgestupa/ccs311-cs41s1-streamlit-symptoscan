@@ -137,6 +137,7 @@ if prompt := st.chat_input('Ask away!', disabled=st.session_state.disable_chat_i
 
     st.session_state.messages.append({'role': 'user', 'content': prompt})
 
+
 if current_state == "NOT_ASKING" and prompt is not None:
     if prompt in ['help', 'Help']:
         write_bot_message('Good day! You can start or continue this chat by telling us what symptoms you are currently experiencing.\n\nIt would help us if you specify what symptoms: e.g. "I am experiencing symptoms such as runny nose, coughing, sore throat."')
@@ -153,6 +154,17 @@ if current_state == "NOT_ASKING" and prompt is not None:
             st.session_state.current_state = "IS_ASKING"
             st.session_state.possible_diseases = responses
 
+    st.session_state.disable_chat_input = False
+    st.rerun()
+
+elif current_state == "IS_ASKING" and prompt is not None and prompt in ["stop", "Stop"]: 
+    st.session_state.current_state = "NOT_ASKING"
+    st.session_state.possible_diseases = []
+    st.session_state.current_symptom = []
+    st.session_state.experiencing_symptoms = []
+
+    write_bot_message('You can continue this chat by telling us what symptoms you are currently experiencing.\n\nIt would help us if you specify what symptoms: e.g. "I am experiencing symptoms such as runny nose, coughing, sore throat."')
+    
     st.session_state.disable_chat_input = False
     st.rerun()
 
