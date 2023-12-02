@@ -155,7 +155,7 @@ if current_state == "NOT_ASKING" and prompt is not None:
 
         row_index, row = responses[0]
 
-        if similarity_score <= 10:
+        if similarity_score <= 5:
             write_bot_message(f'We have failed to scan your symptoms, please try again and we recommend listing out what symptoms you are experiencing.\n\n(e.g. I am experiencing symptoms such as runny nose, coughing, sore throat.)')
         else:
             write_bot_message(f'Based on the symptoms you are experiencing, you may be experiencing {row[0]}. Symptoms of {row[0]} include: {row[2]}. Is the diagnosis correct?\n\n(Type **Yes** if correct, **No** if wrong, **Stop** if you want to be re-diagnosed.)')
@@ -262,6 +262,17 @@ elif current_state == "ASKING_SYMPTOM" and len(possible_diseases) > 0:
 
     st.session_state.current_state = "WAITING_SYMPTOM_ANSWER"
 
+    st.session_state.disable_chat_input = False
+    st.rerun()
+    
+elif current_state == "WAITING_SYMPTOM_ANSWER" and prompt in ["stop", "Stop"]:
+    st.session_state.current_state = "NOT_ASKING"
+    st.session_state.possible_diseases = []
+    st.session_state.current_symptom = []
+    st.session_state.experiencing_symptoms = []
+
+    write_bot_message('You can continue this chat by telling us what symptoms you are currently experiencing.\n\nIt would help us if you specify what symptoms: e.g. "I am experiencing symptoms such as runny nose, coughing, sore throat."')
+    
     st.session_state.disable_chat_input = False
     st.rerun()
     
