@@ -88,8 +88,8 @@ def get_most_similar_response(df, column, query, top_k=1):
     return responses, similarity_score
 
 
-diseases_df = pd.read_csv("datasets/diseases.csv")
-symptoms_df = pd.read_csv("datasets/symptoms.csv")
+diseases_df = pd.read_csv("https://raw.githubusercontent.com/smgestupa/ccs311-cs41s1-streamlit-symptoscan/main/datasets/diseases.csv")
+symptoms_df = pd.read_csv("https://raw.githubusercontent.com/smgestupa/ccs311-cs41s1-streamlit-symptoscan/main/datasets/symptoms.csv")
 
 
 """# 🩺 SymptoScan"""
