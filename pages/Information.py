@@ -35,6 +35,8 @@ symptoms_df = pd.read_csv("https://raw.githubusercontent.com/smgestupa/ccs311-cs
 
 "SymptoScan remains a practical resource for users seeking preliminary insights into their health conditions."
 
+st.divider()
+
 col1, col2 = st.columns(2)
 
 with col1:

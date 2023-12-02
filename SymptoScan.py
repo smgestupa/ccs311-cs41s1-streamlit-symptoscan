@@ -98,6 +98,8 @@ symptoms_df = pd.read_csv("https://raw.githubusercontent.com/smgestupa/ccs311-cs
 
 """❗❗&nbsp;&nbsp;If doubts persist, consulting a licensed doctor is recommended, as they possess the expertise needed for accurate diagnoses, unlike the chatbot relying on internet-based knowledge."""
 
+st.divider()
+
 def disable_chat_input():
     st.session_state.disable_chat_input = True
 
