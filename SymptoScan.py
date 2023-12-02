@@ -153,16 +153,24 @@ if current_state == "NOT_ASKING" and prompt is not None:
         write_bot_message('Good day! You can start or continue this chat by telling us what symptoms you are currently experiencing.\n\nIt would help us if you specify what symptoms: e.g. "I am experiencing symptoms such as runny nose, coughing, sore throat."')
     
     else:
-        responses, similarity_score = get_most_similar_response(diseases_df, 'General Symptoms', prompt, top_k=3)
+        disease, disease_similarity_score = get_most_similar_response(diseases_df, 'Disease', prompt)
 
-        row_index, row = responses[0]
-
-        if similarity_score <= 5:
-            write_bot_message(f'We have failed to scan your symptoms, please try again and we recommend listing out what symptoms you are experiencing.\n\n(e.g. I am experiencing symptoms such as runny nose, coughing, sore throat.)')
-        else:
+        if disease_similarity_score >= 50:
+            row_index, row = disease[0]
+            
             write_bot_message(f'Based on the symptoms you are experiencing, you may be experiencing {row[0]}. Symptoms of {row[0]} include: {row[2]}. Is the diagnosis correct?\n\n(Type **Yes** if correct, **No** if wrong, **Stop** if you want to be re-diagnosed.)')
             st.session_state.current_state = "IS_ASKING"
-            st.session_state.possible_diseases = responses
+        else:
+            responses, responses_similarity_score = get_most_similar_response(diseases_df, 'General Symptoms', prompt, top_k=3)
+
+            row_index, row = responses[0]
+
+            if responses_similarity_score <= 5:
+                write_bot_message(f'We have failed to scan your symptoms, please try again and we recommend listing out what symptoms you are experiencing.\n\n(e.g. I am experiencing symptoms such as runny nose, coughing, sore throat.)')
+            else:
+                write_bot_message(f'Based on the symptoms you are experiencing, you may be experiencing {row[0]}. Symptoms of {row[0]} include: {row[2]}. Is the diagnosis correct?\n\n(Type **Yes** if correct, **No** if wrong, **Stop** if you want to be re-diagnosed.)')
+                st.session_state.current_state = "IS_ASKING"
+                st.session_state.possible_diseases = responses
 
     st.session_state.disable_chat_input = False
     st.rerun()
