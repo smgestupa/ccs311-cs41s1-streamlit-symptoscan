@@ -4,7 +4,8 @@ import pandas as pd
 
 st.set_page_config(
     page_title="Information",
-    page_icon="💊"
+    page_icon="💊",
+    layout="wide"
 )
 
 random_quotes = [
@@ -23,15 +24,31 @@ random_quotes = [
 
 st.sidebar.success(random.choice(random_quotes))
 
-"""# 💊 Information"""
 
-"""Lorem ipsum dolorem."""
+diseases_df = pd.read_csv("https://raw.githubusercontent.com/smgestupa/ccs311-cs41s1-streamlit-symptoscan/main/datasets/diseases.csv")
+symptoms_df = pd.read_csv("https://raw.githubusercontent.com/smgestupa/ccs311-cs41s1-streamlit-symptoscan/main/datasets/symptoms.csv")
+
+
+"# 💊 Information"
+
+"SymptoScan comes with its own set of constraints as it relies on the programmer's dataset rather than utilizing ChatGPT to apply in order to practice NLP methods covered in prior lessons. It's important to note that while SymptoScan can offer valuable insights, it is not a substitute for professional medical advice, diagnosis, or treatment."
+
+"SymptoScan remains a practical resource for users seeking preliminary insights into their health conditions."
+
+st.divider()
 
 col1, col2 = st.columns(2)
 
 with col1:
     "## Diseases Dataset"
 
+    "By articulating the symptoms you're currently facing, the chatbot employs its programmed algorithms to analyze the information and provide potential explanations or suggestions."
+
+    st.dataframe(data=diseases_df)
 
 with col2:
     "## Symptoms Dataset"
+
+    "By informing the chatbot about various symptoms you may be experiencing, it can help identify potential illnesses."
+
+    st.dataframe(data=symptoms_df)

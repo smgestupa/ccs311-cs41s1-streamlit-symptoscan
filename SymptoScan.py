@@ -88,15 +88,17 @@ def get_most_similar_response(df, column, query, top_k=1):
     return responses, similarity_score
 
 
-diseases_df = pd.read_csv("datasets/diseases.csv")
-symptoms_df = pd.read_csv("datasets/symptoms.csv")
+diseases_df = pd.read_csv("https://raw.githubusercontent.com/smgestupa/ccs311-cs41s1-streamlit-symptoscan/main/datasets/diseases.csv")
+symptoms_df = pd.read_csv("https://raw.githubusercontent.com/smgestupa/ccs311-cs41s1-streamlit-symptoscan/main/datasets/symptoms.csv")
 
 
 """# 🩺 SymptoScan"""
 
 """SymptoScan, derived from "symptom" and "scan," is designed to analyze user symptoms and suggest potential diseases/illnesses. Users can input various symptoms, allowing the chatbot to identify or provide insights into potential sicknesses."""
 
-"""❗❗&nbsp;&nbsp;If doubts persist, consulting a licensed doctor is recommended, as they possess the expertise needed for accurate diagnoses, unlike the chatbot relying on internet-based knowledge."""
+"""❗❗&nbsp;&nbsp;**If doubts persist, consulting a licensed doctor is recommended**, as they possess the expertise needed for accurate diagnoses, unlike the chatbot relying on internet-based knowledge."""
+
+st.divider()
 
 def disable_chat_input():
     st.session_state.disable_chat_input = True
@@ -151,16 +153,24 @@ if current_state == "NOT_ASKING" and prompt is not None:
         write_bot_message('Good day! You can start or continue this chat by telling us what symptoms you are currently experiencing.\n\nIt would help us if you specify what symptoms: e.g. "I am experiencing symptoms such as runny nose, coughing, sore throat."')
     
     else:
-        responses, similarity_score = get_most_similar_response(diseases_df, 'General Symptoms', prompt, top_k=3)
+        disease, disease_similarity_score = get_most_similar_response(diseases_df, 'Disease', prompt)
 
-        row_index, row = responses[0]
-
-        if similarity_score <= 5:
-            write_bot_message(f'We have failed to scan your symptoms, please try again and we recommend listing out what symptoms you are experiencing.\n\n(e.g. I am experiencing symptoms such as runny nose, coughing, sore throat.)')
-        else:
+        if disease_similarity_score >= 50:
+            row_index, row = disease[0]
+            
             write_bot_message(f'Based on the symptoms you are experiencing, you may be experiencing {row[0]}. Symptoms of {row[0]} include: {row[2]}. Is the diagnosis correct?\n\n(Type **Yes** if correct, **No** if wrong, **Stop** if you want to be re-diagnosed.)')
             st.session_state.current_state = "IS_ASKING"
-            st.session_state.possible_diseases = responses
+        else:
+            responses, responses_similarity_score = get_most_similar_response(diseases_df, 'General Symptoms', prompt, top_k=3)
+
+            row_index, row = responses[0]
+
+            if responses_similarity_score <= 5:
+                write_bot_message(f'We have failed to scan your symptoms, please try again and we recommend listing out what symptoms you are experiencing.\n\n(e.g. I am experiencing symptoms such as runny nose, coughing, sore throat.)')
+            else:
+                write_bot_message(f'Based on the symptoms you are experiencing, you may be experiencing {row[0]}. Symptoms of {row[0]} include: {row[2]}. Is the diagnosis correct?\n\n(Type **Yes** if correct, **No** if wrong, **Stop** if you want to be re-diagnosed.)')
+                st.session_state.current_state = "IS_ASKING"
+                st.session_state.possible_diseases = responses
 
     st.session_state.disable_chat_input = False
     st.rerun()
@@ -211,7 +221,7 @@ elif current_state == "SCAN_FAILED":
     st.session_state.experiencing_symptoms = []
     st.session_state.disable_chat_input = False
 
-    write_bot_message(f'We have failed to scan your symptoms, please try again and we recommend listing out what symptoms you are experiencing.\n\n(e.g. I am experiencing symptoms such as runny nose, coughing, sore throat.)')
+    write_bot_message(f'We have failed to scan your symptoms, please try again and we recommend listing out what symptoms you are experiencing: e.g. "I am experiencing symptoms such as runny nose, coughing, sore throat."')
 
     st.rerun()
     
