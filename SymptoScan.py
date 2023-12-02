@@ -221,7 +221,7 @@ elif current_state == "SCAN_FAILED":
     st.session_state.experiencing_symptoms = []
     st.session_state.disable_chat_input = False
 
-    write_bot_message(f'We have failed to scan your symptoms, please try again and we recommend listing out what symptoms you are experiencing.\n\n(e.g. I am experiencing symptoms such as runny nose, coughing, sore throat.)')
+    write_bot_message(f'We have failed to scan your symptoms, please try again and we recommend listing out what symptoms you are experiencing: e.g. "I am experiencing symptoms such as runny nose, coughing, sore throat."')
 
     st.rerun()
     
