@@ -9,7 +9,7 @@ from io import StringIO
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-openai.api_key = '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'
+openai.api_key = st.secrets['openai_secret_key']
 
 spacy.prefer_gpu()
 nlp = spacy.load("en_core_web_sm")
