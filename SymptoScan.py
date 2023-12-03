@@ -56,12 +56,12 @@ def write_bot_message(response):
         st.session_state.messages.append({'role': 'assistant', 'content': full_response})
 
 def get_most_similar_diseases(prompt):
-    diseases_text = diseases_df.to_csv(index=False)
+    diseases_text = diseases_df.to_csv(index=False, sep=',')
     
     completion = openai.chat.completions.create(
         model='gpt-3.5-turbo',
         messages=[
-            {'role': 'system', 'content': f'I want you to act like a system that produces ONLY THE RESULT, NO PLACEHOLDERS, NOTHING MORE NOTHING LESS. I have this CSV:\n{diseases_text}\nWhat are the closest top 3 diseases based on this prompt, and get as CSV with intact headers and get the index of the results from the given CSV and add it onto a column before "Disease" and the name of the column is "row_index": {prompt}\nIf no similar data is found, simply return FALSE instead.'}
+            {'role': 'system', 'content': f'I want you to act like a system that produces ONLY THE RESULT, NO PLACEHOLDERS, NOTHING MORE NOTHING LESS. I have this CSV:\n{diseases_text}\nWhat are the closest top 3 diseases based on this prompt, and get as CSV with intact headers and get the index of the results from the given CSV and add it onto a column before "Disease" and the name of the column is "row_index": {prompt}\nIf no similar data is found, simply return FALSE instead. And double check the CSV format, please fix it before sending.'}
         ]
     )
 
@@ -76,6 +76,18 @@ def get_most_similar_diseases(prompt):
         responses.append([row_index, similar_disease])
 
     return responses
+
+def get_disease_response(disease_name):
+    completion = openai.chat.completions.create(
+        model='gpt-3.5-turbo',
+        messages=[
+            {'role': 'system', 'content': f'I want you to act like a system that produces ONLY THE RESULT, NO PLACEHOLDERS, NOTHING MORE NOTHING LESS. What is a better response if a patient has {disease_name}? Please expand the response in a way where the patient can be relieved and follow.'}
+        ]
+    )
+
+    result = completion.choices[0].message.content
+
+    return result
 
 def get_most_similar_response(df, column, query, top_k=1):
     # Remove special characters
@@ -220,7 +232,9 @@ elif current_state == "IS_ASKING" and prompt is not None and prompt in ["yes", "
     st.session_state.current_symptom = []
     st.session_state.experiencing_symptoms = []
 
-    write_bot_message(f'Glad we got it correct! You are experiencing {row[0]}. {row[3]}.\n\nThe symptoms include, which more than one of these you are currently experiencing: {row[2]}. Our recommendation: {row[4]}.')
+    recommendation = get_disease_response(row[0])
+
+    write_bot_message(f'Glad we got it correct! You are experiencing {row[0]}. {row[3]}.\n\nThe symptoms include, which more than one of these you are currently experiencing: {row[2]}. Our recommendation: {recommendation}')
     
     st.session_state.disable_chat_input = False
     st.rerun()
@@ -262,7 +276,9 @@ elif current_state == "WAITING_SYMPTOM_CALCULATION":
         st.session_state.current_symptom = []
         st.session_state.experiencing_symptoms = []
 
-        write_bot_message(f'You might be experiencing {row[0]}. {row[3]}.\n\nThe symptoms include, which more than one of these you are currently experiencing: {row[2]}. Our recommendation: {row[4]}.\n\n(If you are not confident in our answer, please try again and we recommend listing out what you are experiencing.)')
+        recommendation = get_disease_response(row[0])
+
+        write_bot_message(f'You might be experiencing {row[0]}. {row[3]}.\n\nThe symptoms include, which more than one of these you are currently experiencing: {row[2]}. Our recommendation: {recommendation}.\n\n(If you are not confident in our answer, please try again and we recommend listing out what you are experiencing.)')
     
     else:
         st.session_state.current_state = "ASKING_SYMPTOM"
