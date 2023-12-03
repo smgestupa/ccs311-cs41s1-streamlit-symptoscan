@@ -1,14 +1,21 @@
 import time
 import random
+import openai
 import spacy
 import regex as re
 import streamlit as st
 import pandas as pd
+from io import StringIO
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
+openai.api_key = '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'
+
 spacy.prefer_gpu()
 nlp = spacy.load("en_core_web_sm")
+
+diseases_df = pd.read_csv("https://raw.githubusercontent.com/smgestupa/ccs311-cs41s1-streamlit-symptoscan/main/datasets/diseases.csv")
+symptoms_df = pd.read_csv("https://raw.githubusercontent.com/smgestupa/ccs311-cs41s1-streamlit-symptoscan/main/datasets/symptoms.csv")
 
 st.set_page_config(
     page_title="SymptoScan",
@@ -47,6 +54,40 @@ def write_bot_message(response):
         time.sleep(0.01)
         
         st.session_state.messages.append({'role': 'assistant', 'content': full_response})
+
+def get_most_similar_diseases(prompt):
+    diseases_text = diseases_df.to_csv(index=False, sep=',')
+    
+    completion = openai.chat.completions.create(
+        model='gpt-3.5-turbo',
+        messages=[
+            {'role': 'system', 'content': f'I want you to act like a system that produces ONLY THE RESULT, NO PLACEHOLDERS, NOTHING MORE NOTHING LESS. I have this CSV:\n{diseases_text}\nWhat are the closest top 3 diseases based on this prompt, and get as CSV with intact headers and get the index of the results from the given CSV and add it onto a column before "Disease" and the name of the column is "row_index": {prompt}\nIf no similar data is found, simply return FALSE instead. And double check the CSV format, please fix it before sending.'}
+        ]
+    )
+
+    result = completion.choices[0].message.content
+    result_df = pd.read_csv(StringIO(result))
+
+    row_indeces = result_df['row_index']
+    similar_diseases = result_df.drop(columns=['row_index'])
+    
+    responses = []
+    for (_, row_index), (_, similar_disease) in zip(row_indeces.items(), similar_diseases.iterrows()):
+        responses.append([row_index, similar_disease])
+
+    return responses
+
+def get_disease_response(disease_name):
+    completion = openai.chat.completions.create(
+        model='gpt-3.5-turbo',
+        messages=[
+            {'role': 'system', 'content': f'I want you to act like a system that produces ONLY THE RESULT, NO PLACEHOLDERS, NOTHING MORE NOTHING LESS. What is a better response if a patient has {disease_name}? Please expand the response in a way where the patient can be relieved and follow.'}
+        ]
+    )
+
+    result = completion.choices[0].message.content
+
+    return result
 
 def get_most_similar_response(df, column, query, top_k=1):
     # Remove special characters
@@ -88,15 +129,11 @@ def get_most_similar_response(df, column, query, top_k=1):
     return responses, similarity_score
 
 
-diseases_df = pd.read_csv("https://raw.githubusercontent.com/smgestupa/ccs311-cs41s1-streamlit-symptoscan/main/datasets/diseases.csv")
-symptoms_df = pd.read_csv("https://raw.githubusercontent.com/smgestupa/ccs311-cs41s1-streamlit-symptoscan/main/datasets/symptoms.csv")
-
-
 """# 🩺 SymptoScan"""
 
 """SymptoScan, derived from "symptom" and "scan," is designed to analyze user symptoms and suggest potential diseases/illnesses. Users can input various symptoms, allowing the chatbot to identify or provide insights into potential sicknesses."""
 
-"""❗❗&nbsp;&nbsp;**If doubts persist, consulting a licensed doctor is recommended**, as they possess the expertise needed for accurate diagnoses, unlike the chatbot relying on internet-based knowledge."""
+"""**IMPORTANT ADVISORY**: If doubts persist, consulting a licensed doctor is recommended, as they possess the expertise needed for accurate diagnoses, unlike the chatbot relying on internet-based knowledge."""
 
 st.divider()
 
@@ -161,13 +198,14 @@ if current_state == "NOT_ASKING" and prompt is not None:
             write_bot_message(f'Based on the symptoms you are experiencing, you may be experiencing {row[0]}. Symptoms of {row[0]} include: {row[2]}. Is the diagnosis correct?\n\n(Type **Yes** if correct, **No** if wrong, **Stop** if you want to be re-diagnosed.)')
             st.session_state.current_state = "IS_ASKING"
         else:
-            responses, responses_similarity_score = get_most_similar_response(diseases_df, 'General Symptoms', prompt, top_k=3)
+            responses = get_most_similar_diseases(prompt)
 
-            row_index, row = responses[0]
-
-            if responses_similarity_score <= 5:
+            if responses == "FALSE":
                 write_bot_message(f'We have failed to scan your symptoms, please try again and we recommend listing out what symptoms you are experiencing.\n\n(e.g. I am experiencing symptoms such as runny nose, coughing, sore throat.)')
+            
             else:
+                row_index, row = responses[0]
+
                 write_bot_message(f'Based on the symptoms you are experiencing, you may be experiencing {row[0]}. Symptoms of {row[0]} include: {row[2]}. Is the diagnosis correct?\n\n(Type **Yes** if correct, **No** if wrong, **Stop** if you want to be re-diagnosed.)')
                 st.session_state.current_state = "IS_ASKING"
                 st.session_state.possible_diseases = responses
@@ -194,7 +232,9 @@ elif current_state == "IS_ASKING" and prompt is not None and prompt in ["yes", "
     st.session_state.current_symptom = []
     st.session_state.experiencing_symptoms = []
 
-    write_bot_message(f'Glad we got it correct! You are experiencing {row[0]}. {row[3]}.\n\nThe symptoms include, which more than one of these you are currently experiencing: {row[2]}. Our recommendation: {row[4]}.')
+    recommendation = get_disease_response(row[0])
+
+    write_bot_message(f'Glad we got it correct! You are experiencing {row[0]}. {row[3]}.\n\nThe symptoms include, which more than one of these you are currently experiencing: {row[2]}. Our recommendation: {recommendation}')
     
     st.session_state.disable_chat_input = False
     st.rerun()
@@ -236,7 +276,9 @@ elif current_state == "WAITING_SYMPTOM_CALCULATION":
         st.session_state.current_symptom = []
         st.session_state.experiencing_symptoms = []
 
-        write_bot_message(f'You might be experiencing {row[0]}. {row[3]}.\n\nThe symptoms include, which more than one of these you are currently experiencing: {row[2]}. Our recommendation: {row[4]}.\n\n(If you are not confident in our answer, please try again and we recommend listing out what you are experiencing.)')
+        recommendation = get_disease_response(row[0])
+
+        write_bot_message(f'You might be experiencing {row[0]}. {row[3]}.\n\nThe symptoms include, which more than one of these you are currently experiencing: {row[2]}. Our recommendation: {recommendation}.\n\n(If you are not confident in our answer, please try again and we recommend listing out what you are experiencing.)')
     
     else:
         st.session_state.current_state = "ASKING_SYMPTOM"
