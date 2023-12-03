@@ -1,14 +1,21 @@
 import time
 import random
+import openai
 import spacy
 import regex as re
 import streamlit as st
 import pandas as pd
+from io import StringIO
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
+openai.api_key = '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'
+
 spacy.prefer_gpu()
 nlp = spacy.load("en_core_web_sm")
+
+diseases_df = pd.read_csv("https://raw.githubusercontent.com/smgestupa/ccs311-cs41s1-streamlit-symptoscan/main/datasets/diseases.csv")
+symptoms_df = pd.read_csv("https://raw.githubusercontent.com/smgestupa/ccs311-cs41s1-streamlit-symptoscan/main/datasets/symptoms.csv")
 
 st.set_page_config(
     page_title="SymptoScan",
@@ -48,6 +55,28 @@ def write_bot_message(response):
         
         st.session_state.messages.append({'role': 'assistant', 'content': full_response})
 
+def get_most_similar_diseases(prompt):
+    diseases_text = diseases_df.to_csv(index=False)
+    
+    completion = openai.chat.completions.create(
+        model='gpt-3.5-turbo',
+        messages=[
+            {'role': 'system', 'content': f'I want you to act like a system that produces ONLY THE RESULT, NO PLACEHOLDERS, NOTHING MORE NOTHING LESS. I have this CSV:\n{diseases_text}\nWhat are the closest top 3 diseases based on this prompt, and get as CSV with intact headers and get the index of the results from the given CSV and add it onto a column before "Disease" and the name of the column is "row_index": {prompt}\nIf no similar data is found, simply return FALSE instead.'}
+        ]
+    )
+
+    result = completion.choices[0].message.content
+    result_df = pd.read_csv(StringIO(result))
+
+    row_indeces = result_df['row_index']
+    similar_diseases = result_df.drop(columns=['row_index'])
+    
+    responses = []
+    for (_, row_index), (_, similar_disease) in zip(row_indeces.items(), similar_diseases.iterrows()):
+        responses.append([row_index, similar_disease])
+
+    return responses
+
 def get_most_similar_response(df, column, query, top_k=1):
     # Remove special characters
     special_chars_pattern = r'[^a-zA-z0-9\s(\)\[\]\{\}]'
@@ -86,10 +115,6 @@ def get_most_similar_response(df, column, query, top_k=1):
       responses.append([response_row.index.item(), response_row.to_numpy()[0]])
 
     return responses, similarity_score
-
-
-diseases_df = pd.read_csv("https://raw.githubusercontent.com/smgestupa/ccs311-cs41s1-streamlit-symptoscan/main/datasets/diseases.csv")
-symptoms_df = pd.read_csv("https://raw.githubusercontent.com/smgestupa/ccs311-cs41s1-streamlit-symptoscan/main/datasets/symptoms.csv")
 
 
 """# 🩺 SymptoScan"""
@@ -161,13 +186,14 @@ if current_state == "NOT_ASKING" and prompt is not None:
             write_bot_message(f'Based on the symptoms you are experiencing, you may be experiencing {row[0]}. Symptoms of {row[0]} include: {row[2]}. Is the diagnosis correct?\n\n(Type **Yes** if correct, **No** if wrong, **Stop** if you want to be re-diagnosed.)')
             st.session_state.current_state = "IS_ASKING"
         else:
-            responses, responses_similarity_score = get_most_similar_response(diseases_df, 'General Symptoms', prompt, top_k=3)
+            responses = get_most_similar_diseases(prompt)
 
-            row_index, row = responses[0]
-
-            if responses_similarity_score <= 5:
+            if responses == "FALSE":
                 write_bot_message(f'We have failed to scan your symptoms, please try again and we recommend listing out what symptoms you are experiencing.\n\n(e.g. I am experiencing symptoms such as runny nose, coughing, sore throat.)')
+            
             else:
+                row_index, row = responses[0]
+
                 write_bot_message(f'Based on the symptoms you are experiencing, you may be experiencing {row[0]}. Symptoms of {row[0]} include: {row[2]}. Is the diagnosis correct?\n\n(Type **Yes** if correct, **No** if wrong, **Stop** if you want to be re-diagnosed.)')
                 st.session_state.current_state = "IS_ASKING"
                 st.session_state.possible_diseases = responses
