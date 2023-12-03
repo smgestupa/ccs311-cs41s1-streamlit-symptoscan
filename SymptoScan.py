@@ -133,7 +133,7 @@ def get_most_similar_response(df, column, query, top_k=1):
 
 """SymptoScan, derived from "symptom" and "scan," is designed to analyze user symptoms and suggest potential diseases/illnesses. Users can input various symptoms, allowing the chatbot to identify or provide insights into potential sicknesses."""
 
-"""❗❗&nbsp;&nbsp;**If doubts persist, consulting a licensed doctor is recommended**, as they possess the expertise needed for accurate diagnoses, unlike the chatbot relying on internet-based knowledge."""
+"""**IMPORTANT ADVISORY**: If doubts persist, consulting a licensed doctor is recommended, as they possess the expertise needed for accurate diagnoses, unlike the chatbot relying on internet-based knowledge."""
 
 st.divider()
 
