@@ -9,8 +9,7 @@ SymptoScan, derived from "symptom" and "scan," is designed to analyze user sympt
 ## Installation
 
 > [!IMPORTANT]
-> This section assumes that you've installed Python 3.10 or higher. If you haven't yet installed Python, please [visit this website](https://www.python.org/downloads/).
-> This application uses OpenAI API, thus, it is important you retrieve one of your secret keys and create a `.streamlit/secrets.toml` to place it there.
+> This section assumes that you've installed Python 3.10 or higher. If you haven't yet installed Python, please [visit this website](https://www.python.org/downloads/). An OpenAI secret key is also required and should be placed onto `.streamlit/secrets.toml`.
 
 1. Start a terminal and open the project folder.
 2. Install Streamlit through your terminal: `pip install streamlit`. (Skip if Streamlit is already installed)
