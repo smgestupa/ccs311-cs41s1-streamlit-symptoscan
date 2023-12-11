@@ -38,7 +38,36 @@ random_quotes = [
 
 st.sidebar.success(random.choice(random_quotes))
 
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
+if "current_state" not in st.session_state:
+    st.session_state.current_state = "NOT_ASKING"
+
+if "user_threads" not in st.session_state:
+    st.session_state.user_threads = []
+
+if "bot_threads" not in st.session_state:
+    st.session_state.bot_threads = []
+
+if "possible_diseases" not in st.session_state:
+    st.session_state.possible_diseases = []
+
+if "current_symptom" not in st.session_state:
+    st.session_state.current_symptom = []
+
+if "experiencing_symptoms" not in st.session_state:
+    st.session_state.experiencing_symptoms = []
+
+if "disable_chat_input" not in st.session_state:
+    st.session_state.disable_chat_input = False
+
+if "last_symptom" not in st.session_state:
+    st.session_state.last_symptom = None
+
 def write_bot_message(response):
+    st.session_state.bot_threads.append(response)
+
     with st.chat_message('assistant'):
         message_placeholder = st.empty()
         full_response = ""
@@ -128,6 +157,24 @@ def get_most_similar_response(df, column, query, top_k=1):
 
     return responses, similarity_score
 
+def summarize_chat_threads():
+    user_threads = "\n----SEPERATE MESSAGE----\n".join(st.session_state.user_threads)
+    bot_threads = "\n----SEPERATE MESSAGE----\n".join(st.session_state.bot_threads)
+
+    completion = openai.chat.completions.create(
+        model='gpt-3.5-turbo',
+        messages=[
+            {'role': 'system', 'content': f'I want you to act like a system that produces ONLY THE RESULT, NO PLACEHOLDERS, NOTHING MORE NOTHING LESS. Analuze and summarize the chat threads between the user and chatbot to gain insights about the user.\n\nThe user threads:\n{user_threads}\n\nThe bot threads:\n{bot_threads}\n\nPlease expand the response.'}
+        ]
+    )
+
+    result = completion.choices[0].message.content
+
+    return result
+
+def disable_chat_input():
+    st.session_state.disable_chat_input = True
+
 
 """# 🩺 SymptoScan"""
 
@@ -137,35 +184,11 @@ def get_most_similar_response(df, column, query, top_k=1):
 
 st.divider()
 
-def disable_chat_input():
-    st.session_state.disable_chat_input = True
-
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-if "current_state" not in st.session_state:
-    st.session_state.current_state = "NOT_ASKING"
-
-if "possible_diseases" not in st.session_state:
-    st.session_state.possible_diseases = []
-
-if "current_symptom" not in st.session_state:
-    st.session_state.current_symptom = []
-
-if "experiencing_symptoms" not in st.session_state:
-    st.session_state.experiencing_symptoms = []
-
-if "disable_chat_input" not in st.session_state:
-    st.session_state.disable_chat_input = False
-
-if "last_symptom" not in st.session_state:
-    st.session_state.last_symptom = None
-
 if len(st.session_state.messages) == 0:
     st.session_state.messages.append({
         'role': 'assistant', 
         'content': "Greetings! I am SymptoScan, your dedicated healthcare companion, here to guide you on your wellness journey. Think of me not merely as a chatbot, but as your very own Baymax-inspired health assistant.\n\n**🤗 Caring Conversations**: Describe your symptoms, and I'll provide information and support.\n\n**🚑 Healthcare Companion**: Much like Baymax's round-the-clock availability, I'm here for you 24/7 and I'm just a message away.\n\n**💊 Educational and Reassuring Insights**: I'm not just here for information; I'm here to educate and reassure. Gain insights into your health conditions and receive guidance.\n\n**🔒 Privacy and Security**: Your health information is as precious as for healthcare capabilities. Rest assured, your data is safe and secure for I don't store any information about you.\n\n**NOTE**: Data, such as messages, do not save and will disappear once the page/browser closes."
-        })
+    })
 
 for message in st.session_state.messages:
     with st.chat_message(message['role']):
@@ -173,10 +196,19 @@ for message in st.session_state.messages:
 
 
 current_state = st.session_state.current_state
+user_threads = st.session_state.user_threads
+bot_threads = st.session_state.bot_threads
 possible_diseases = st.session_state.possible_diseases
 current_symptom = st.session_state.current_symptom
 experiencing_symptoms = st.session_state.experiencing_symptoms
 last_symptom = st.session_state.last_symptom
+
+if len(user_threads) > 15:
+    st.session_state.user_threads.pop()
+
+if len(bot_threads) > 15:
+    st.session_state.bot_threads.pop()
+
 
 if prompt := st.chat_input('Ask away!', disabled=st.session_state.disable_chat_input, on_submit=disable_chat_input):
     with st.chat_message('user'):
@@ -184,10 +216,18 @@ if prompt := st.chat_input('Ask away!', disabled=st.session_state.disable_chat_i
 
     st.session_state.messages.append({'role': 'user', 'content': prompt})
 
+    st.session_state.user_threads.append(prompt)
+
 
 if current_state == "NOT_ASKING" and prompt is not None:
     if prompt in ['help', 'Help']:
         write_bot_message('Good day! You can start or continue this chat by telling us what symptoms you are currently experiencing.\n\nIt would help us if you specify what symptoms: e.g. "I am experiencing symptoms such as runny nose, coughing, sore throat."')
+
+    elif prompt in ['summarize', 'Summarize']:
+        if len(bot_threads) >= 5:
+            write_bot_message(summarize_chat_threads())
+        else:
+            write_bot_message("This thread is still short for the bot to summarize. Please converse more with SymptoScan.")
     
     else:
         disease, disease_similarity_score = get_most_similar_response(diseases_df, 'Disease', prompt)
@@ -195,7 +235,7 @@ if current_state == "NOT_ASKING" and prompt is not None:
         if disease_similarity_score >= 50:
             row_index, row = disease[0]
             
-            write_bot_message(f'Based on the symptoms you are experiencing, you may be experiencing {row[0]}. Symptoms of {row[0]} include: {row[2]}. Is the diagnosis correct?\n\n(Type **Yes** if correct, **No** if wrong, **Stop** if you want to be re-diagnosed.)')
+            write_bot_message(f'Based on the symptoms you are experiencing, you may be experiencing {row[0]}. Symptoms of {row[0]} include: {row[2]}. Is the diagnosis correct?\n\n(Type **Yes** if correct, **No** if wrong, **Stop** if you want to be re-diagnosed, **Summarize** if you want to get the summary of this chat.)')
             st.session_state.current_state = "IS_ASKING"
         else:
             responses = get_most_similar_diseases(prompt)
@@ -206,10 +246,32 @@ if current_state == "NOT_ASKING" and prompt is not None:
             else:
                 row_index, row = responses[0]
 
-                write_bot_message(f'Based on the symptoms you are experiencing, you may be experiencing {row[0]}. Symptoms of {row[0]} include: {row[2]}. Is the diagnosis correct?\n\n(Type **Yes** if correct, **No** if wrong, **Stop** if you want to be re-diagnosed.)')
+                write_bot_message(f'Based on the symptoms you are experiencing, you may be experiencing {row[0]}. Symptoms of {row[0]} include: {row[2]}. Is the diagnosis correct?\n\n(Type **Yes** if correct, **No** if wrong, **Stop** if you want to be re-diagnosed, **Summarize** if you want to get the summary of this chat.)')
                 st.session_state.current_state = "IS_ASKING"
                 st.session_state.possible_diseases = responses
 
+    st.session_state.disable_chat_input = False
+    st.rerun()
+
+elif current_state == "IS_ASKING" and prompt is not None and prompt in ["summarize", "Summarize"] and len(bot_threads) >= 5:
+    st.session_state.current_state = "NOT_ASKING"
+    st.session_state.possible_diseases = []
+    st.session_state.current_symptom = []
+    st.session_state.experiencing_symptoms = []
+
+    write_bot_message(summarize_chat_threads())
+    
+    st.session_state.disable_chat_input = False
+    st.rerun()
+
+elif current_state == "IS_ASKING" and prompt is not None and prompt in ["summarize", "Summarize"] and len(bot_threads) < 5:
+    st.session_state.current_state = "NOT_ASKING"
+    st.session_state.possible_diseases = []
+    st.session_state.current_symptom = []
+    st.session_state.experiencing_symptoms = []
+
+    write_bot_message("This thread is still short for the bot to summarize. Please converse more with SymptoScan.")
+    
     st.session_state.disable_chat_input = False
     st.rerun()
 
